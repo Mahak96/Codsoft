@@ -1,0 +1,49 @@
+import pandas as pd
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Example dataset (user ratings for movies)
+data = {
+    'User1': [5, 3, 0, 3, 2],
+    'User2': [2, 0, 4, 1, 5],
+    'User3': [1, 4, 3, 0, 0],
+    'User4': [0, 2, 5, 4, 3],
+    'User5': [4, 0, 4, 4, 2]
+}
+
+# Convert the dictionary into pandas DataFrame
+df = pd.DataFrame(data)
+
+# Function to get movie recommendations for a user
+def get_recommendations(user_name, df):
+    # Calculate similarities with other users (transpose to make users as rows)
+    similarities = cosine_similarity(df.T)
+
+    # Convert similarities to DataFrame
+    sim_df = pd.DataFrame(similarities, index=df.columns, columns=df.columns)
+
+    # Get movies watched and rated by the user
+    watched_movies = df.columns[df.loc[user_name] > 0].tolist()
+
+    # Find similar users who have watched and rated movies
+    similar_users = sim_df[user_name].sort_values(ascending=False).index[1:]  # Exclude the user itself
+
+    # Generate movie recommendations
+    recommendations = []
+    for user in similar_users:
+        # Find movies the similar user has watched and rated
+        similar_user_movies = df.columns[df.loc[user] > 0].tolist()
+        for movie in similar_user_movies:
+            if movie not in watched_movies and movie not in recommendations:
+                recommendations.append(movie)
+                if len(recommendations) >= 5:
+                    break
+        if len(recommendations) >= 5:
+            break
+
+    return recommendations[:5]  # Return at most 5 recommendations
+
+# Example usage:
+user_name = 'User1'  # Specify the user for whom you want recommendations
+recommendations = get_recommendations(user_name, df)
+
+print(f"Recommendations for {user_name}: {recommendations}")
